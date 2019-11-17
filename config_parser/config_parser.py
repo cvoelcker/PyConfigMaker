@@ -70,7 +70,15 @@ class ConfigGenerator:
         for config in self.config_dict:
             group = parser.add_argument_group(config)
             for k, v in self.config_dict[config].items():
-                group.add_argument('--' + k, default=v, type=type(v))
+                # setup fix code for list handling
+                if type(v) == list:
+                    try:
+                        list_item_type = type(v[0])
+                    except IndexError as e:
+                        print('Cannot parse default type from list without items')
+                    group.add_argument('--' + k, nargs='+', default=v, type=list_item_type)
+                else:
+                    group.add_argument('--' + k, default=v, type=type(v))
         return parser
 
     def build_config(self):
