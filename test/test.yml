@@ -1,0 +1,33 @@
+ENV_INFO:
+  name: DemonAttackNoFrameskip-v4
+INPUT_SPEC:
+  embedding_size: 32
+  image_shape:
+  - 128
+  - 128
+  - 3
+  num_frames: 1
+  num_stacked: 4
+LOGGING:
+  tb_logging_path: test
+  tb_name: different_time_connector
+MODEL_SPEC:
+  hidden: 8
+  image_blocks: 2
+PATHS:
+  image_save_path: data/images/demon_attack_nowhite/
+  model_save_path: data/models/try_1/
+  object_model_save_path: om.ckpt
+PREPROCESSING:
+  load_pretrained_object_model: true
+  train_object_model: true
+  use_object_model: true
+TRAIN_SPEC:
+  device: cuda
+  episodes: 10000000
+  gamma: 0.99
+  num_envs: 32
+  optimizer: RMSprop
+  step_size: 0.0007
+  step_size_decay: 1.0e-05
+  trajectory_length: 10
