@@ -76,9 +76,9 @@ class ConfigGenerator:
                         list_item_type = type(v[0])
                     except IndexError as e:
                         print('Cannot parse default type from list without items')
-                    group.add_argument('--' + k, nargs='+', default=v, type=list_item_type)
+                    group.add_argument('--' + k.replace('_', '-'), nargs='+', default=v, type=list_item_type, help=' ')
                 else:
-                    group.add_argument('--' + k, default=v, type=type(v))
+                    group.add_argument('--' + k.replace('_', '-'), default=v, type=type(v), help=' ')
         return parser
 
     def build_config(self):
