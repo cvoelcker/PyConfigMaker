@@ -33,7 +33,7 @@ class ConfigGenerator:
         :param yaml_file_location: relative file location of the yaml config
         """
         self.config_dict = parse_from_file(yaml_file_location)
-        self.storage_tuples = self.build_tuples()
+        self.storage_tuples, self.meta_tuple = self.build_tuples()
         self.arg_parser = self.build_arg_parser()
         self.args = None
     
@@ -49,13 +49,15 @@ class ConfigGenerator:
     def build_tuples(self):
         """
         Builds a dictionary of namedtuples for easier config access
-        :return: a dictionary of namedtuples from the config dictionary
+        :return: a dictionary of namedtuples from the config dictionary, and a tuple to hold all
+            config tuples
         """
         all_tuples = {}
         for k in self.config_dict:
             config_tuple = namedtuple(k, self.config_dict[k].keys())
             all_tuples[k] = config_tuple
-        return all_tuples
+        meta_tuple = namedtuple('Config', self.config_dict.keys())
+        return all_tuples, meta_tuple
     
     def build_arg_parser(self):
         """
@@ -89,7 +91,7 @@ class ConfigGenerator:
                 else:
                     config[k] = v
             all_config_templates[c] = self.storage_tuples[c](**config)
-        return all_config_templates
+        return self.meta_tuple(**all_config_templates)
     
     def dump_config(self, file_location):
         """
