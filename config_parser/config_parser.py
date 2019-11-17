@@ -70,8 +70,13 @@ class ConfigGenerator:
         for config in self.config_dict:
             group = parser.add_argument_group(config)
             for k, v in self.config_dict[config].items():
+                # setup code for boolean handling
+                if type(v) == bool:
+                    bool_group = group.add_mutually_exclusive_group(required=False)
+                    bool_group.add_argument('--' + k.replace('_', '-'), dest=k, default=v, action='store_true', help=' ')
+                    bool_group.add_argument('--no-' + k.replace('_', '-'), dest=k, default=v, action='store_false', help=' ')
                 # setup fix code for list handling
-                if type(v) == list:
+                elif type(v) == list:
                     try:
                         list_item_type = type(v[0])
                     except IndexError as e:

@@ -30,7 +30,7 @@ MODEL_SPEC:
         image_blocks: 2
 
 PREPROCESSING:
-        use_object_model: True
+        use_object_model: False
         train_object_model: True
         load_pretrained_object_model: True
 

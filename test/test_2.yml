@@ -3,14 +3,14 @@ ENV_INFO:
 INPUT_SPEC:
   embedding_size: 32
   image_shape:
-  - 128
-  - 128
-  - 3
+  - 4
+  - 7
+  - 8
   num_frames: 1
   num_stacked: 4
 LOGGING:
   tb_logging_path: test
-  tb_name: different_time_connector
+  tb_name: testingall
 MODEL_SPEC:
   hidden: 8
   image_blocks: 2
@@ -20,8 +20,8 @@ PATHS:
   object_model_save_path: om.ckpt
 PREPROCESSING:
   load_pretrained_object_model: true
-  train_object_model: true
-  use_object_model: true
+  train_object_model: false
+  use_object_model: false
 TRAIN_SPEC:
   device: cuda
   episodes: 10000000
