@@ -28,6 +28,8 @@ INPUT_SPEC:
 MODEL_SPEC:
         hidden: 8
         image_blocks: 2
+        sub_config_for_module:
+            showing_of_nesting: True
 
 PREPROCESSING:
         use_object_model: False

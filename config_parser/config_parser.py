@@ -34,7 +34,7 @@ class ConfigGenerator:
         :param yaml_file_location: relative file location of the yaml config
         """
         self.config_dict = parse_from_file(yaml_file_location)
-        self.storage_tuples, self.meta_tuple = self.build_tuples()
+        self.tuple_templates = self.build_tuples()
         self.arg_parser = self.build_arg_parser()
         self.args: Optional[Dict] = None
     
@@ -53,12 +53,14 @@ class ConfigGenerator:
         :return: a dictionary of namedtuples from the config dictionary, and a tuple to hold all
             config tuples
         """
+        return self.build_tuples_rec('Config', self.config_dict)
+
+    def build_tuples_rec(self, key, config_dict):
         all_tuples = {}
-        for k in self.config_dict:
-            config_tuple = namedtuple(k, self.config_dict[k].keys())
-            all_tuples[k] = config_tuple
-        meta_tuple = namedtuple('Config', self.config_dict.keys())
-        return all_tuples, meta_tuple
+        for k in config_dict:
+            if isinstance(config_dict[k], dict):
+                all_tuples[k] = self.build_tuples_rec(k, config_dict[k])
+        return namedtuple(key, config_dict.keys()), all_tuples
     
     def build_arg_parser(self) -> argparse.ArgumentParser:
         """
@@ -68,24 +70,32 @@ class ConfigGenerator:
         parser = argparse.ArgumentParser(
                 description='Process args for experiments', 
                 formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-        for config in self.config_dict:
-            group = parser.add_argument_group(config)
-            for k, v in self.config_dict[config].items():
-                # setup code for boolean handling
-                if type(v) == bool:
-                    bool_group = group.add_mutually_exclusive_group(required=False)
-                    bool_group.add_argument('--' + k.replace('_', '-'), dest=k, default=v, action='store_true', help=' ')
-                    bool_group.add_argument('--no-' + k.replace('_', '-'), dest=k, default=v, action='store_false', help=' ')
-                # setup fix code for list handling
-                elif type(v) == list:
-                    try:
-                        list_item_type = type(v[0])
-                    except IndexError as e:
-                        print('Cannot parse default type from list without items')
-                    group.add_argument('--' + k.replace('_', '-'), nargs='+', default=v, type=list_item_type, help=' ')
-                else:
-                    group.add_argument('--' + k.replace('_', '-'), default=v, type=type(v), help=' ')
+        self.build_arg_parser_rec(self.config_dict, parser)
         return parser
+
+    def build_arg_parser_rec(self, config_dict, group):
+        for k, v in config_dict.items():
+            # recurse on dict
+            if isinstance(v, dict):
+                sub_group = group.add_argument_group(k)
+                self.build_arg_parser_rec(v, sub_group)
+
+            # setup code for boolean handling
+            elif type(v) == bool:
+                bool_group = group.add_mutually_exclusive_group(required=False)
+                bool_group.add_argument('--' + k.replace('_', '-'), dest=k, default=v, action='store_true', help=' ')
+                bool_group.add_argument('--no-' + k.replace('_', '-'), dest=k, default=v, action='store_false', help=' ')
+
+            # setup fix code for list handling
+            elif type(v) == list:
+                try:
+                    list_item_type = type(v[0])
+                except IndexError as e:
+                    print('Cannot parse default type from list without items')
+                group.add_argument('--' + k.replace('_', '-'), nargs='+', default=v, type=list_item_type, help=' ')
+
+            else:
+                group.add_argument('--' + k.replace('_', '-'), default=v, type=type(v), help=' ')
 
     def build_config(self):
         """
@@ -96,16 +106,19 @@ class ConfigGenerator:
         if self.args is None:
             raise ValueError('ConfigGenerator has no parsed arguments')
         arg_dict = self.args
-        all_config_templates = dict()
-        for c in self.config_dict:
-            config = {}
-            for k, v in self.config_dict[c].items():
-                if k in arg_dict:
-                    config[k] = arg_dict[k]
-                else:
-                    config[k] = v
-            all_config_templates[c] = self.storage_tuples[c](**config)
-        return self.meta_tuple(**all_config_templates)
+        return self.build_config_rec(arg_dict, self.config_dict, self.tuple_templates)
+
+    def build_config_rec(self, arg_dict, config_dict, templates):
+        used_config = dict()
+        for k, v in config_dict.items():
+            if isinstance(v, dict):
+                used_config[k] = self.build_config_rec(arg_dict, v, templates[1][k])
+            elif k in arg_dict:
+                used_config[k] = arg_dict[k]
+            else:
+                used_config[k] = v
+        return templates[0](**used_config)
+
     
     def dump_config(self, file_location: str):
         """
