@@ -1,9 +1,10 @@
 from collections import namedtuple
+from typing import Dict, List, Type, Tuple, Optional
 import argparse
 import yaml
 
 
-def parse_from_file(file_location):
+def parse_from_file(file_location: str) -> Dict:
     """
     Parses a yml file into a dict
     :param file_location: relative file location of the yml
@@ -13,7 +14,7 @@ def parse_from_file(file_location):
         return yaml.safe_load(yaml_file)
 
 
-def write_to_file(data, file_location):
+def write_to_file(data: Dict, file_location: str):
     """
     Writes a dictionary back into yml format
     :param data: the dictionary
@@ -27,7 +28,7 @@ class ConfigGenerator:
     """
     Holds the parser, yml config dict and the tuple templates
     """
-    def __init__(self, yaml_file_location):
+    def __init__(self, yaml_file_location: str):
         """
         Initializes the config generator from a yml file location
         :param yaml_file_location: relative file location of the yaml config
@@ -35,15 +36,15 @@ class ConfigGenerator:
         self.config_dict = parse_from_file(yaml_file_location)
         self.storage_tuples, self.meta_tuple = self.build_tuples()
         self.arg_parser = self.build_arg_parser()
-        self.args = None
+        self.args: Optional[Dict] = None
     
-    def __call__(self, args):
+    def __call__(self, args: List):
         """
         Parses the arguments. Needs to be called with sys.argv[1:] in general
         :param args: the argument (normally sys.argv[1:])
         :return: a dictionary of namedtuples filled with the defaults and the passed arguments
         """
-        self.args = self.arg_parser.parse_args(args)
+        self.args = vars(self.arg_parser.parse_args(args))
         return self.build_config()
 
     def build_tuples(self):
@@ -59,7 +60,7 @@ class ConfigGenerator:
         meta_tuple = namedtuple('Config', self.config_dict.keys())
         return all_tuples, meta_tuple
     
-    def build_arg_parser(self):
+    def build_arg_parser(self) -> argparse.ArgumentParser:
         """
         Builds the argument parser with default values from the config file
         :return: the argument parser
@@ -94,7 +95,7 @@ class ConfigGenerator:
         """
         if self.args is None:
             raise ValueError('ConfigGenerator has no parsed arguments')
-        arg_dict = vars(self.args)
+        arg_dict = self.args
         all_config_templates = dict()
         for c in self.config_dict:
             config = {}
@@ -106,12 +107,14 @@ class ConfigGenerator:
             all_config_templates[c] = self.storage_tuples[c](**config)
         return self.meta_tuple(**all_config_templates)
     
-    def dump_config(self, file_location):
+    def dump_config(self, file_location: str):
         """
         Writes the config back to a file in yml format, which can be loaded again
         :param file_location: the relative file location
         """
-        arg_dict = vars(self.args)
+        if self.args is None:
+            raise ValueError('ConfigGenerator has no parsed arguments')
+        arg_dict = self.args
         save_dict = dict()
         for c in self.config_dict:
             save_dict_section = {}
