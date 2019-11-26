@@ -106,19 +106,32 @@ class ConfigGenerator:
         if self.args is None:
             raise ValueError('ConfigGenerator has no parsed arguments')
         arg_dict = self.args
-        return self.build_config_rec(arg_dict, self.config_dict, self.tuple_templates)
+        tuple_config, dict_config = self.build_config_rec(arg_dict, self.config_dict, self.tuple_templates)
+        self.config_dict = dict_config
+        return tuple_config
 
     def build_config_rec(self, arg_dict, config_dict, templates):
         used_config = dict()
+        dict_config = dict()
         for k, v in config_dict.items():
             if isinstance(v, dict):
-                used_config[k] = self.build_config_rec(arg_dict, v, templates[1][k])
+                used_config[k], dict_config[k] = self.build_config_rec(arg_dict, v, templates[1][k])
             elif k in arg_dict:
-                used_config[k] = arg_dict[k]
+                used_config[k] = dict_config[k] = arg_dict[k]
             else:
-                used_config[k] = v
-        return templates[0](**used_config)
+                used_config[k] = dict_config[k] = v
+        return templates[0](**used_config), dict_config
 
+    def append_argument_to_config(self, argument_path, default):
+        d = self.config_dict
+        for a in argument_path[:-1]:
+            d = d[a]
+        d[argument_path[-1]] = default
+
+    def recompile(self):
+        self.tuple_templates = self.build_tuples()
+        self.arg_parser = self.build_arg_parser()
+        self.args: Optional[Dict] = None
     
     def dump_config(self, file_location: str):
         """
